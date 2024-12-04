@@ -13,6 +13,9 @@ inputs:
   openai_api_key:
     description: 'OpenAI API key for the LLM'
     required: false
+  patched_api_key:
+    description: 'Patched API key for using Patched services'
+    required: false
   pr_url:
     description: 'URL of the pull request to review'
     required: true
