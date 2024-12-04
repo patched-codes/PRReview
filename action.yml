@@ -75,6 +75,7 @@ runs:
         cat > config.yml << EOF
         github_api_key: "${{ inputs.github_token }}"
         $([ -n "${{ inputs.openai_api_key }}" ] && echo "openai_api_key: \"${{ inputs.openai_api_key }}\"")
+        $([ -n "${{ inputs.patched_api_key }}" ] && echo "patched_api_key: \"${{ inputs.patched_api_key }}\"")
         $([ -n "${{ inputs.pr_url }}" ] && echo "pr_url: \"${{ inputs.pr_url }}\"")
         $([ -n "${{ inputs.model }}" ] && echo "model: \"${{ inputs.model }}\"")
         $([ -n "${{ inputs.client_base_url }}" ] && echo "client_base_url: \"${{ inputs.client_base_url }}\"")
