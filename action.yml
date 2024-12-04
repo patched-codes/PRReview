@@ -1,0 +1,89 @@
+name: 'Patched PRReview'
+description: 'Automatically summarize and comment on PRs in your repository'
+branding:
+  icon: 'git-pull-request'
+  color: 'orange'
+author: '@patched-codes'
+
+inputs:
+  github_token:
+    description: 'GitHub token for creating pull requests'
+    required: false
+    default: ${{ github.token }}
+  openai_api_key:
+    description: 'OpenAI API key for the LLM'
+    required: false
+  pr_url:
+    description: 'URL of the pull request to review'
+    required: true
+    default: ${{ github.event.pull_request.html_url }}
+  model:
+    description: 'LLM model to use'
+    required: false
+  client_base_url:
+    description: 'Base URL for the LLM API'
+    required: false
+  diff_suggestion:
+    description: 'Whether to generate suggestions to improve the PR'
+    required: false
+  diff_summary:
+    description: 'Length of the summary (long, short, none)'
+    required: false
+  model_temperature:
+    description: 'Temperature parameter for the LLM'
+    required: false
+  model_top_p:
+    description: 'Top-p parameter for the LLM'
+    required: false
+  model_max_tokens:
+    description: 'Maximum tokens for the LLM response'
+    required: false
+
+outputs:
+  comment_url:
+    description: 'URL of the created PR comment'
+    value: ${{ steps.pr-review.outputs.comment_url }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Restore pip cache
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-patchwork-cli
+        restore-keys: |
+          ${{ runner.os }}-pip-patchwork-cli
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        pip install patchwork-cli
+
+    - name: Generate config
+      shell: bash
+      run: |
+        cat > config.yml << EOF
+        github_api_key: "${{ inputs.github_token }}"
+        $([ -n "${{ inputs.openai_api_key }}" ] && echo "openai_api_key: \"${{ inputs.openai_api_key }}\"")
+        $([ -n "${{ inputs.pr_url }}" ] && echo "pr_url: \"${{ inputs.pr_url }}\"")
+        $([ -n "${{ inputs.model }}" ] && echo "model: \"${{ inputs.model }}\"")
+        $([ -n "${{ inputs.client_base_url }}" ] && echo "client_base_url: \"${{ inputs.client_base_url }}\"")
+        $([ -n "${{ inputs.diff_suggestion }}" ] && echo "diff_suggestion: ${{ inputs.diff_suggestion }}")
+        $([ -n "${{ inputs.diff_summary }}" ] && echo "diff_summary: \"${{ inputs.diff_summary }}\"")
+        $([ -n "${{ inputs.model_temperature }}" ] && echo "model_temperature: ${{ inputs.model_temperature }}")
+        $([ -n "${{ inputs.model_top_p }}" ] && echo "model_top_p: ${{ inputs.model_top_p }}")
+        $([ -n "${{ inputs.model_max_tokens }}" ] && echo "model_max_tokens: ${{ inputs.model_max_tokens }}")
+        EOF
+
+    - name: Run PRReview
+      id: pr-review
+      shell: bash
+      run: |
+        patchwork PRReview --config config.yml
